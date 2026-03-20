@@ -63,6 +63,10 @@ Additional: `ThemeContext` + `ThemeToggle` for dark mode support.
 - Add confirmation dialog before triggering renewal events
 - Persist dark mode preference to localStorage or just use 
 
+## Time Taken
+
+Approximately **1 hour and 40 minutes** from initial setup to final documentation.
+
 ## AI Assistance
 
 This project was built with the help of **Claude Code** (Claude Opus). AI assisted with:
