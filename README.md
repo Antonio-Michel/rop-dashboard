@@ -1,142 +1,75 @@
-# ROP Renewal Risk Dashboard — Starter Repo
+# ROP Renewal Risk Dashboard
 
-This is the starter repo for the Jr. Full Stack Engineer take-home test. 
-
-**Please see docs/SPEC.md for project instructions.**
-
-## Quick Start
+## Getting Started
 
 ```bash
 docker-compose up --build
 ```
 
-This starts four services:
+Confirm everything is running:
 
-| Service      | URL                          | Description                        |
-|-------------|------------------------------|------------------------------------|
-| **Frontend** | http://localhost:5173        | React app (your dashboard)         |
-| **Backend**  | http://localhost:3003        | Express API                        |
-| **Database** | localhost:5432               | PostgreSQL (user: rop, pass: rop)  |
-| **Mock RMS** | http://localhost:3001        | Receives webhook POSTs (bonus)     |
+1. **Backend health:** http://localhost:3003/api/health
+2. **Frontend:** http://localhost:5173 — click "Park Meadows Apartments" to open the dashboard
 
-## Verify It Works
+## How to Use
 
-After `docker-compose up`, check:
+1. Open http://localhost:5173 and click the property
+2. The dashboard auto-triggers a risk calculation on load and displays all 12 residents
+3. Use the **filter buttons** (All / High / Medium / Low) to narrow by risk tier
+4. Click **Resident** or **Risk Score** column headers to sort (toggles ascending/descending)
+5. Click any **row** to expand and see the signal breakdown (delinquency, renewal offer, rent gap, days to expiry)
+6. Click **"Trigger Renewal"** on any row to send a webhook event to the mock RMS — verify with `docker-compose logs -f mock-rms`
+7. Click **"Recalculate Scores"** to re-run the scoring
+8. Use the **theme toggle** (slider in the top right) to switch between light and dark mode
 
-1. **Backend health:** http://localhost:3003/api/health — should return `{ "status": "ok" }`
-2. **Frontend:** http://localhost:5173 — should show the property list with "Park Meadows Apartments"
-3. **Click the property** to navigate to the Renewal Risk Dashboard page (your workspace)
+## What I Built
 
-## What's Provided
+### Backend
 
-### Database (fully set up — do not modify the schema)
-- `db/init.sql` — Creates all tables (properties, units, residents, leases, ledger, renewal offers, renewal risk scores)
-- `db/seed.sql` — Seeds 1 property, 15 units, 12 residents with varied risk scenarios
+- **`POST /api/v1/properties/:propertyId/renewal-risk/calculate`** — Calculates risk scores for all active residents using 4 weighted signals (days to expiry, delinquency, renewal offer status, rent vs. market) with interaction bonuses. Stores results in `renewal_risk_scores` and returns them in the spec's JSON format.
+- **`POST /api/v1/properties/:propertyId/residents/:residentId/trigger-renewal`** — (Bonus) Sends a `renewal.risk_flagged` webhook event to the mock RMS with the resident's latest risk data.
 
-### Backend (`backend/`)
-- Express + TypeScript server running on port 3003
-- Database connection configured (`src/db.ts`)
-- Health check endpoint (`GET /api/health`)
-- Properties list endpoint (`GET /api/v1/properties`)
-- **TODO:** Implement `POST /api/v1/properties/:propertyId/renewal-risk/calculate`
+### Frontend
 
-### Frontend (`frontend/`)
-- React + TypeScript + Tailwind CSS
-- Routing configured (React Router)
-- Home page lists properties with links to their dashboards
-- **TODO:** Build the dashboard at `src/pages/RenewalRiskPage.tsx`
+Component structure under `frontend/src/pages/RenewalRisk/`:
 
-### Mock RMS (`mock-rms/`)
-- Simple Node.js server that accepts POST to `/webhook`
-- Logs received payloads to the console
-- Available at `http://mock-rms:3001/webhook` from within Docker (or `http://localhost:3001/webhook` from your machine)
-- Used for the bonus "Trigger Renewal Event" feature
+| Component | Purpose |
+|-----------|---------|
+| `index.tsx` | Page container — state management, API calls, filtering, sorting |
+| `RiskSummaryBar` | Resident count, tier breakdown badges, recalculate button |
+| `RiskFilterBar` | Tier filter buttons (All/High/Medium/Low) |
+| `RiskTable` | Table wrapper with sortable column headers |
+| `RiskTableRow` | Single resident row with tier badge, trigger renewal button, expandable |
+| `SignalBreakdown` | Expandable detail panel showing individual signal values |
+| `types.ts` | Shared TypeScript interfaces |
 
-## Environment Variables
+Additional: `ThemeContext` + `ThemeToggle` for dark mode support.
 
-The backend has these pre-configured in `docker-compose.yml`:
+## Decisions and Assumptions
 
-| Variable        | Value                                    |
-|----------------|------------------------------------------|
-| `DATABASE_URL`  | `postgres://rop:rop@db:5432/rop`        |
-| `PORT`          | `3003`                                   |
-| `MOCK_RMS_URL`  | `http://mock-rms:3001/webhook`          |
+- **Moved RenewalRiskPage.tsx into its own feature directory (`pages/RenewalRisk/`).** The original single-file component was replaced with a folder containing `index.tsx` and co-located sub-components (RiskTable, RiskFilterBar, etc.). This keeps all dashboard-related code together and makes the feature easier to navigate as it grows.
+- **Priya Patel scores High (90), not Medium as the seed data comment suggests.** The spec's scoring formula produces this result: she's delinquent (25pts) + ≤90 days (40pts) + 12% rent gap (15pts) = 80 base, plus the "delinquent AND ≤60 days" interaction bonus (+10) = 90. I followed the formula rather than the approximate labels in the seed data.
+- **SQL query strategy:** Used 4 focused queries instead of one large JOIN — easier to read, debug, and explain.
+- **Auto-calculate on page load** rather than requiring a manual button click first, so the property manager sees data immediately.
+- **Sorting defaults to risk score descending** (highest risk first) since that's the most actionable view for a property manager.
+- **Dark mode** added as a quality-of-life feature for property managers who may work long hours at their desk of who simply prefer the darker themes to reduce eye strain.
 
-## Seed Data Scenarios
+## What I'd Improve With More Time
 
-The seed data includes 12 residents with different risk profiles:
+- Add unit tests for the scoring logic (extract it into a pure function for easy testing)
+- Add a search/filter by resident name
+- Add pagination or virtual scrolling for properties with many residents
+- Show a diff when recalculating (highlight score changes)
+- Add confirmation dialog before triggering renewal events
+- Persist dark mode preference to localStorage or just use 
 
-| Resident         | Unit | Days to Expiry | Delinquent | Renewal Offer | Rent Gap | Expected Risk |
-|-----------------|------|----------------|------------|---------------|----------|---------------|
-| Jane Doe         | 101  | 30             | No         | No            | 20%      | **High**      |
-| Marcus Chen      | 102  | 45             | Yes        | No            | 5%       | **High**      |
-| Sarah Kim        | 103  | 75             | No         | No            | ~3%      | **Medium**    |
-| David Rodriguez  | 104  | 120            | Yes        | Yes           | ~5%      | **Medium**    |
-| Alice Johnson    | 201  | 200            | No         | Yes           | ~3%      | **Low**       |
-| Bob Williams     | 202  | 250            | No         | Yes (accepted)| ~2%      | **Low**       |
-| Priya Patel      | 105  | 60             | Yes        | Yes           | 12%      | **Medium**    |
-| Tom Baker        | 106  | 20             | Yes        | No            | 15%      | **High**      |
-| Lisa Tran        | 107  | 190            | No         | Yes           | ~2%      | **Low**       |
-| Mike Brown       | 108  | 90             | No         | No            | ~3%      | **Medium**    |
-| Emma Wilson      | 203  | 300            | No         | Yes (accepted)| ~2%      | **Low**       |
-| Carlos Mendez    | 109  | 55             | No         | No            | ~7%      | **Medium**    |
+## AI Assistance
 
-## Project Structure
+This project was built with the help of **Claude Code** (Claude Opus). AI assisted with:
 
-```
-starter-repo/
-├── docker-compose.yml          # Starts all services
-├── db/
-│   ├── init.sql                # Schema (DO NOT modify)
-│   └── seed.sql                # Test data
-├── backend/
-│   ├── Dockerfile
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── src/
-│       ├── index.ts            # Express app — add your routes here
-│       └── db.ts               # Database connection (ready to use)
-├── frontend/
-│   ├── Dockerfile
-│   ├── package.json
-│   ├── vite.config.ts          # Proxies /api to backend
-│   ├── tailwind.config.js
-│   ├── index.html
-│   └── src/
-│       ├── main.tsx            # Router setup (done)
-│       ├── App.tsx             # Property list page (done)
-│       └── pages/
-│           └── RenewalRiskPage.tsx  # YOUR WORKSPACE — build here
-├── mock-rms/
-│   ├── Dockerfile
-│   └── server.js               # Logs webhook payloads (for bonus)
-└── README.md
-```
+- Scaffolding the backend endpoint structure and SQL queries
+- Generating the React component tree and Tailwind styling
+- Implementing dark mode across all components
+- Debugging the Tailwind dark mode configuration (system preference vs. class strategy)
 
-## Useful Commands
-
-```bash
-# Start everything
-docker-compose up --build
-
-# Rebuild after changes (if hot-reload isn't picking up)
-docker-compose up --build backend frontend
-
-# Connect to the database directly
-docker-compose exec db psql -U rop -d rop
-
-# View mock RMS logs (for bonus webhook task)
-docker-compose logs -f mock-rms
-
-# Tear down and reset (removes data)
-docker-compose down -v
-```
-
-## Tips
-
-- The frontend proxies `/api` requests to the backend, so you can use relative URLs like `fetch("/api/v1/properties/...")` in your React code
-- The `pool` export from `backend/src/db.ts` is ready to use for queries
-- Don't spend more than 15 minutes on styling — functional beats pretty
-- If something is ambiguous, make a decision and document it in your README
-
-Good luck.
+All scoring logic, architectural decisions, and component design were reviewed and validated by me. The risk scoring formula was manually verified against the seed data scenarios.
