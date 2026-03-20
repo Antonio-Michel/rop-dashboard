@@ -4,6 +4,7 @@ import { RiskData, TierFilter, SortOption } from "./types";
 import RiskSummaryBar from "./RiskSummaryBar";
 import RiskFilterBar from "./RiskFilterBar";
 import RiskTable from "./RiskTable";
+import ThemeToggle from "../../components/ThemeToggle";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -70,22 +71,23 @@ function RenewalRiskPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-8">
-      <div className="sticky top-0 z-10 bg-gray-50 py-3 -mx-8 px-8 border-b border-gray-100">
-        <Link to="/" className="text-sm text-blue-600 hover:text-blue-800">
+      <div className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-900 py-3 -mx-8 px-8 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+        <Link to="/" className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
           &larr; Back to properties
         </Link>
+        <ThemeToggle />
       </div>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 mt-4">
         Renewal Risk Dashboard
       </h1>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800 text-sm">{error}</p>
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-red-800 dark:text-red-300 text-sm">{error}</p>
           <button
             onClick={calculateRisk}
-            className="mt-2 text-sm text-red-600 underline hover:text-red-800"
+            className="mt-2 text-sm text-red-600 dark:text-red-400 underline hover:text-red-800 dark:hover:text-red-300"
           >
             Try again
           </button>
@@ -93,7 +95,7 @@ function RenewalRiskPage() {
       )}
 
       {loading && !data && (
-        <p className="text-gray-400 py-8 text-center">Calculating risk scores...</p>
+        <p className="text-gray-400 dark:text-gray-500 py-8 text-center">Calculating risk scores...</p>
       )}
 
       {data && (
@@ -111,13 +113,14 @@ function RenewalRiskPage() {
 
           <RiskTable
             residents={filteredResidents}
+            propertyId={propertyId!}
             expandedIds={expandedIds}
             onToggleExpand={toggleExpand}
             sort={sort}
             onSortChange={setSort}
           />
 
-          <p className="mt-4 text-xs text-gray-400">
+          <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
             Last calculated: {new Date(data.calculatedAt).toLocaleString()}
           </p>
         </>

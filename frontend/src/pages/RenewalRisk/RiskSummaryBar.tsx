@@ -11,24 +11,24 @@ function RiskSummaryBar({ totalResidents, riskTiers, onRecalculate, loading }: P
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
       <div className="flex items-center gap-6">
-        <p className="text-sm text-gray-600">
-          <span className="font-semibold text-gray-900">{totalResidents}</span> residents scored
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{totalResidents}</span> residents scored
         </p>
         <div className="flex gap-3">
           <span className="inline-flex items-center gap-1.5 text-sm">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-            <span className="font-medium">{riskTiers.high}</span>
-            <span className="text-gray-500">high</span>
+            <span className="font-medium dark:text-gray-200">{riskTiers.high}</span>
+            <span className="text-gray-500 dark:text-gray-400">high</span>
           </span>
           <span className="inline-flex items-center gap-1.5 text-sm">
             <span className="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
-            <span className="font-medium">{riskTiers.medium}</span>
-            <span className="text-gray-500">medium</span>
+            <span className="font-medium dark:text-gray-200">{riskTiers.medium}</span>
+            <span className="text-gray-500 dark:text-gray-400">medium</span>
           </span>
           <span className="inline-flex items-center gap-1.5 text-sm">
             <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
-            <span className="font-medium">{riskTiers.low}</span>
-            <span className="text-gray-500">low</span>
+            <span className="font-medium dark:text-gray-200">{riskTiers.low}</span>
+            <span className="text-gray-500 dark:text-gray-400">low</span>
           </span>
         </div>
       </div>

@@ -168,13 +168,63 @@ app.post("/api/v1/properties/:propertyId/renewal-risk/calculate", async (req, re
   }
 });
 
-// =============================================================
-// TODO (Bonus): Add your trigger renewal event endpoint here
-//
-// POST /api/v1/properties/:propertyId/residents/:residentId/trigger-renewal
-//
-// This should POST to the mock RMS endpoint (MOCK_RMS_URL env var).
-// =============================================================
+// Trigger renewal event — forwards risk data to mock RMS webhook
+app.post("/api/v1/properties/:propertyId/residents/:residentId/trigger-renewal", async (req, res) => {
+  const { propertyId, residentId } = req.params;
+  const mockRmsUrl = process.env.MOCK_RMS_URL;
+
+  if (!mockRmsUrl) {
+    res.status(500).json({ error: "MOCK_RMS_URL not configured" });
+    return;
+  }
+
+  try {
+    // Get the latest risk score for this resident
+    const scoreResult = await pool.query(
+      `SELECT risk_score, risk_tier, days_to_expiry
+       FROM renewal_risk_scores
+       WHERE property_id = $1 AND resident_id = $2
+       ORDER BY calculated_at DESC
+       LIMIT 1`,
+      [propertyId, residentId]
+    );
+
+    if (scoreResult.rows.length === 0) {
+      res.status(404).json({ error: "No risk score found for this resident. Run a calculation first." });
+      return;
+    }
+
+    const { risk_score, risk_tier, days_to_expiry } = scoreResult.rows[0];
+
+    const payload = {
+      event: "renewal.risk_flagged",
+      eventId: `evt-${crypto.randomUUID()}`,
+      timestamp: new Date().toISOString(),
+      propertyId,
+      residentId,
+      data: {
+        riskScore: risk_score,
+        riskTier: risk_tier,
+        daysToExpiry: days_to_expiry,
+      },
+    };
+
+    const rmsResponse = await fetch(mockRmsUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!rmsResponse.ok) {
+      throw new Error(`RMS responded with ${rmsResponse.status}`);
+    }
+
+    res.json({ success: true, eventId: payload.eventId });
+  } catch (err: any) {
+    console.error("Trigger renewal error:", err);
+    res.status(500).json({ error: "Failed to trigger renewal event" });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`✓ Backend running on http://localhost:${PORT}`);

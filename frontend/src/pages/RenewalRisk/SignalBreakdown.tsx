@@ -29,13 +29,13 @@ function SignalBreakdown({ signals }: Props) {
   ];
 
   return (
-    <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
-      <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Signal Breakdown</p>
+    <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
+      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">Signal Breakdown</p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {items.map((item) => (
           <div key={item.label} className="text-sm">
-            <p className="text-gray-500">{item.label}</p>
-            <p className={`font-medium ${item.flagged ? "text-red-600" : "text-green-600"}`}>
+            <p className="text-gray-500 dark:text-gray-400">{item.label}</p>
+            <p className={`font-medium ${item.flagged ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
               {item.value}
             </p>
           </div>
